@@ -268,8 +268,10 @@ parent:
   **every paragraph actually belong to this section's job**, or has foreign content drifted in
   — a future-work sentence sitting in the System Model, a result stated inside the Method,
   motivation repeated in the model? Flag misplaced content and name its correct home (do not
-  silently move it). Do forward/back references (`as shown in Section~\ref{...}`) still hold
-  after edits?
+  silently move it). Cut this section's habitual filler and repetition (see the per-section
+  redundancy list in `references/paper-structure.md`) — cut filler freely, but move or flag
+  anything with real substance. Do forward/back references (`as shown in Section~\ref{...}`)
+  still hold after edits?
 
 ### Marking flags and candidates (never fabricate)
 

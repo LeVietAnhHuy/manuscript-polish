@@ -184,6 +184,44 @@ Where things belong:
 Future-Work section as `misplaced-future-work`. The general case (any off-topic paragraph)
 needs your judgment on the re-read — the lint only catches the future-work instance.
 
+## What is usually redundant in each section (safe to cut)
+
+Beyond misplaced content, each section has its own habitual filler — material that repeats
+something already said, or that the reader does not need. Cutting *filler and repetition* is
+always safe and is the fastest route to a tighter paper. But **cut only filler; move substance.**
+If a passage carries real information, relocate it (to a table, figure, or the supplement) or
+flag it — never delete something the reader needs. When unsure whether a passage is truly
+redundant, flag it with `% [CHECK]` rather than removing it.
+
+Per-section candidates to cut or compress:
+
+- **Abstract / Introduction:** textbook-level background the field already knows ("Wireless
+  networks have grown rapidly…"); the abstract restated almost verbatim; a contribution list
+  followed by re-explaining each contribution at length in the same section; a forward-reference
+  on nearly every sentence.
+- **Related Work:** one-paragraph-per-paper summaries ("In [5] the authors proposed…; in [6]
+  the authors proposed…") — group by theme and compress; papers cited that do not bear on the
+  gap; background already covered in Preliminaries.
+- **Background / Preliminaries:** standard derivations that can simply be cited; any concept
+  defined here but never used later.
+- **System Model:** re-deriving a well-known result instead of citing it; symbols defined but
+  never used; over-detailed assumptions that never affect the analysis.
+- **Proposed Method:** repeating the system model or re-stating the already-formulated problem;
+  prose that duplicates the algorithm listing step for step; deep implementation minutiae
+  (→ supplement).
+- **Evaluation Setup:** default or standard parameters spelled out in prose (→ a table);
+  baselines re-described at length when Related Work already described them.
+- **Results:** restating numbers the reader can already read in a table or figure — point to the
+  table and give the *insight* instead; describing a figure without interpreting it; the same
+  trend narrated again for each of several figures.
+- **Conclusion:** re-deriving or re-explaining results; a paragraph-by-paragraph replay of the
+  whole paper (keep it tight); anything new (which belongs earlier — see content fit).
+
+Cross-cutting: the **same contribution stated in the abstract, introduction, method preamble,
+and conclusion** in near-identical words — keep the sharpest statement and trim the echoes.
+`scripts/style_lint.py` flags a sentence that appears more than once (near-verbatim) as
+`repeated-sentence`.
+
 ## What a structural finding looks like
 
 When a section does not serve its role, raise it concretely, for example:

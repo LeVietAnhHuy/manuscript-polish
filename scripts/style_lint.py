@@ -24,6 +24,7 @@ Categories:
     figure-nowidth      \\includegraphics with no width/scale (risks overflowing the column)
     crowded-figure      2+ narrow panels side-by-side in a one-column figure (use figure*/stack)
     long-equation       a single display-math line wide enough to overflow the column
+    repeated-sentence   a substantial sentence that appears more than once (near-verbatim)
     misplaced-future-work  future-work wording outside a Conclusion/Discussion section
 """
 
@@ -417,6 +418,67 @@ def lint_equations(rows, only):
     return hits
 
 
+def iter_sentences(rows):
+    """Yield (sentence, fpath, start_lineno) for prose sentences, skipping math and structure."""
+    env_stack = []
+    buf = ""
+    buf_line = buf_file = None
+    for fpath, lineno, text in rows:
+        for m in BEGIN_RE.finditer(text):
+            env_stack.append(m.group(1))
+        skipping = any(e in SKIP_ENVS for e in env_stack)
+        for m in END_RE.finditer(text):
+            if env_stack and env_stack[-1] == m.group(1):
+                env_stack.pop()
+        if skipping:
+            continue
+        prose = strip_math(text)
+        if STRUCT_RE.match(text.strip()) or prose.strip() == "":
+            if buf.strip():
+                yield buf, buf_file, buf_line
+            buf, buf_line, buf_file = "", None, None
+            continue
+        if not buf.strip():
+            buf_line, buf_file = lineno, fpath
+        buf += " " + prose
+        while True:
+            m = re.search(r"[.!?]\s", buf)
+            if not m:
+                break
+            yield buf[:m.start() + 1], buf_file, buf_line
+            buf = buf[m.end():]
+            buf_line, buf_file = lineno, fpath
+        if re.search(r"[.!?]\s*$", prose):
+            yield buf, buf_file, buf_line
+            buf, buf_line, buf_file = "", None, None
+    if buf.strip():
+        yield buf, buf_file, buf_line
+
+
+def lint_repeats(rows, only):
+    """Flag a substantial sentence (>=10 words) that near-duplicates another one.
+
+    Uses token-set Jaccard similarity (>=0.8), so a claim restated with small wording changes
+    ("we propose" vs "we proposed …") is caught, not only verbatim copies.
+    """
+    if only and "repeated-sentence" not in only:
+        return []
+    sents = []
+    for sentence, fpath, lineno in iter_sentences(rows):
+        toks = re.sub(r"[^a-z0-9 ]", " ", sentence.lower()).split()
+        if len(toks) >= 10:
+            sents.append((set(toks), fpath, lineno))
+    flagged = [False] * len(sents)
+    for i in range(len(sents)):
+        for j in range(i + 1, len(sents)):
+            a, b = sents[i][0], sents[j][0]
+            inter = len(a & b)
+            if inter and inter / len(a | b) >= 0.8:
+                flagged[i] = flagged[j] = True
+    return [(fpath, lineno, "repeated-sentence", "near-duplicate of another sentence")
+            for k, (_toks, fpath, lineno) in enumerate(sents) if flagged[k]]
+
+
 def lint_misplaced(rows, only):
     """Flag future-work language that appears outside a Conclusion/Discussion-type section."""
     if only and "misplaced-future-work" not in only:
@@ -478,7 +540,7 @@ def main():
     rows = flatten(main_path)
     hits = (lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
             + lint_figures(rows, only) + lint_equations(rows, only)
-            + lint_misplaced(rows, only))
+            + lint_repeats(rows, only) + lint_misplaced(rows, only))
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -492,7 +554,7 @@ def main():
     print("\nSummary (heuristic — confirm every hit by reading):")
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
                 "long-caption", "figure-nowidth", "crowded-figure", "long-equation",
-                "misplaced-future-work",
+                "repeated-sentence", "misplaced-future-work",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):
