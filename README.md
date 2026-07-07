@@ -22,6 +22,8 @@ and similar). Hosts without sub-agents run the same procedure sequentially.
   drafts captions/skeletons from existing text (never fabricates data).
 - **Bibliography integrity** — citation coverage, Title-Case protection, repeated-author dashes.
 - **Deep review mode** — 10 passes, 5 reviewer personas, committed pass by pass.
+- **Supplement merge (optional)** — when a supplement file must fit a page limit (e.g. TNSE
+  18 pages), merge it into a page-limited manuscript with a compact appendix, in new files.
 
 ## Layout
 
@@ -34,7 +36,8 @@ manuscript-polish/
 │   ├── paper-structure.md                # section roles and layout conventions
 │   ├── figures-tables-supplement.md      # when prose should become a visual / supplement
 │   ├── bibliography.md                   # .bib title casing, dashes, citation integrity
-│   └── review-panel.md                   # the 10-pass, 5-reviewer deep-review playbook
+│   ├── review-panel.md                   # the 10-pass, 5-reviewer deep-review playbook
+│   └── supplement-merge.md               # optional: merge supplement into a page-limited paper
 └── scripts/                              # dependency-free helpers (pre-scan, never edit)
     ├── README.md
     ├── outline.py                        # structure tree + traversal plan

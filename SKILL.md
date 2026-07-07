@@ -94,6 +94,16 @@ uses. Read the surrounding context first so you match it, edit only the named pa
 what you changed and flagged and leave the rest untouched. This is the common case for a quick
 request, so default to it whenever the user points at one part rather than the whole paper.
 
+**Optional — supplement merge / page-limit fit.** Only when the manuscript ships with a separate
+supplement file **and** must hit a page limit (e.g., TNSE's 18 pages including the appendix and
+references). Merge the supplement into one page-limited manuscript with a compact appendix,
+working in **new** files (e.g., `tnse_main_18p.tex`, `appendix_merged.tex`) and leaving the
+originals untouched. The main paper must stay self-contained — never demote a core contribution,
+main equation, main result, or key assumption into the appendix to save space. Full procedure
+(four-bucket classification, compression ratios, IEEEtran appendix mechanics, and the compression
+priority order) is in `references/supplement-merge.md`. If there is no supplement or no page
+limit, ignore this.
+
 ---
 
 ## Non-negotiables (why they matter)
@@ -413,5 +423,7 @@ is more useful to the author than a confident all-clear.
   integrity, and the required bibliography report. Read during Step 2.
 - `references/review-panel.md` — the full 10-pass, 5-reviewer deep-review playbook. Read
   when running Deep-review mode.
+- `references/supplement-merge.md` — optional: merging a supplement into a page-limited
+  manuscript + compact appendix. Read only when there is a supplement file and a page limit.
 - `scripts/README.md` — what `outline.py`, `style_lint.py`, and `bib_check.py` do and how to
   read their output.
