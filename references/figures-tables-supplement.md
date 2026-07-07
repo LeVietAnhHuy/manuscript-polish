@@ -6,14 +6,18 @@ to **spot these paragraphs and mark them** — not to fabricate figures or inven
 helps, draft a caption or a table skeleton from text that already exists, so the author has a
 starting point.
 
-Marking convention (leave in the `.tex` as a comment or a `\comment[id=CR]{...}`):
+Marking convention (a `.tex` comment in Polish mode, or `\comment[id=CR]{...}` in tracked mode
+— same tags as `SKILL.md` "Marking flags and candidates"):
 
 ```latex
-% [FIGURE CANDIDATE | Rk] <one line: what kind of figure and why>
-% [TABLE CANDIDATE  | Rk] <one line: what the columns/rows would be>
-% [ALGORITHM CANDIDATE | Rk] <one line: which procedure to formalize>
-% [MOVE TO SUPPLEMENT | Rk] <one line: why it interrupts the main flow>
+% [FIGURE CANDIDATE] <one line: what kind of figure and why>
+% [TABLE CANDIDATE] <one line: what the columns/rows would be>
+% [ALGORITHM CANDIDATE] <one line: which procedure to formalize>
+% [MOVE TO SUPPLEMENT] <one line: why it interrupts the main flow>
 ```
+
+The reviewer id (`| R2`, `| R5`, ...) is only for **deep review**, where a marker should trace
+back to the persona that raised it. In Polish mode omit it.
 
 ---
 

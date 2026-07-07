@@ -82,6 +82,14 @@ The second is narrower, and that narrowness is exactly why it is more trustworth
 claim to *what was evaluated*. Prefer *reduce/lower/improve* over *solve/eliminate*, and
 *can/may* over *will*, unless a proof or a strong result backs the stronger word.
 
+The "sized" example above assumes an evaluation exists to bound the claim to ("under the
+evaluated scenarios"). Often a draft has **no results yet**. Do not invent a smaller result
+to replace the overclaim — that fabricates evidence. Instead, rewrite the claim as honest
+*intent* and flag it: "Our method is designed to reduce RAR waste from false detections" or
+"We aim to reduce ...". Intent language is accurate even before results exist, and the
+`% [CHECK]` flag reminds the author to state the actual result once they have it. This is the
+precedence rule spelled out in `SKILL.md` non-negotiable #1.
+
 ---
 
 ## 4. Short sentences, clear structure
@@ -104,6 +112,11 @@ short ones.
 
 Same content, far easier to read. As a rough guide, watch any sentence over ~30 words or with
 three or more commas — it is usually two sentences wearing a trench coat.
+
+One exception: a long sentence that is really a *list* — a notation dump ("we denote N by ...,
+M by ..., λ by ...") or a parameter enumeration — should not be split into many short
+sentences. That just scatters the definitions. Turn it into a table instead and mark it a
+table candidate (`references/figures-tables-supplement.md`), leaving the content intact.
 
 ---
 
@@ -219,6 +232,9 @@ prose, not to domain vocabulary.
   past for specific completed experiments ("we ran 1000 trials").
 - Reference style: consistent "Fig.~\ref{}", "Table~\ref{}", "Section~\ref{}" with
   non-breaking spaces.
+- Equation references: write "(\ref{eq:...})" or, if `amsmath` is loaded, "\eqref{eq:...}".
+  Note that `IEEEtran` does not load `amsmath` by default, so prefer "(\ref{...})" unless you
+  can confirm `amsmath` is available — do not add `\eqref` and silently break the build.
 
 ---
 

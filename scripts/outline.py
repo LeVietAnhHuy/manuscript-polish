@@ -180,6 +180,17 @@ def main():
         if "\\end{document}" in text:
             break
 
+        # The abstract is a first-class unit (often the worst overclaim offender), even
+        # though it is not a \section. Treat it as a top-level leaf.
+        if "\\begin{abstract}" in text:
+            close_unit()
+            cur = {"level": "abstract", "title": "Abstract", "file": fpath,
+                   "line": lineno, "words": 0, "paragraphs": 0}
+            continue
+        if "\\end{abstract}" in text:
+            close_unit()
+            continue
+
         lname = level_of(text)
         if lname:
             close_unit()
@@ -207,8 +218,8 @@ def main():
                 words += len(re.findall(r"[A-Za-z][A-Za-z\-']+", stripped))
     close_unit()
 
-    if not headings:
-        print("No \\section headings found. Is this the right file?")
+    if not units:
+        print("No abstract or \\section headings found. Is this the right file?")
         return
 
     # Print the tree.
@@ -220,21 +231,27 @@ def main():
         print(f"{pad}{u['level']}: {u['title'][:70]}")
         print(f"{pad}    [{rel}:{u['line']}]  ~{u['words']} words, ~{u['paragraphs']} paragraphs")
 
-    # Bottom-up traversal plan. A unit is a "container" when the next unit is deeper
-    # (it has children); otherwise it is a "leaf" you polish directly.
-    rank = SECTION_LEVELS
+    # Bottom-up traversal plan. A sectioning unit is a "container" when the next unit is a
+    # deeper section level (it has children); otherwise it is a "leaf" you polish directly.
+    # The abstract and other non-sectioning units are always leaves.
+    def is_container(i):
+        if i + 1 >= len(units):
+            return False
+        cur_l, nxt_l = units[i]["level"], units[i + 1]["level"]
+        if cur_l not in SECTION_LEVELS or nxt_l not in SECTION_LEVELS:
+            return False
+        return SECTION_LEVELS[nxt_l] > SECTION_LEVELS[cur_l]
+
     print("\nBottom-up traversal plan")
     print("Polish each LEAF first (sentence pass + paragraph re-read). Then re-read each")
     print("CONTAINER after its children, rising subsection -> section -> whole manuscript.\n")
-    for i, u in enumerate(units, 1):
-        deeper = i < len(units) and rank[units[i]["level"]] > rank[u["level"]]
-        kind = "container" if deeper else "leaf"
+    for i, u in enumerate(units):
+        kind = "container" if is_container(i) else "leaf"
         rel = os.path.relpath(u["file"], os.path.dirname(main_path))
-        print(f"  {i:3d}. [{kind:<9}] {u['level']:<14} {u['title'][:44]:<44} "
+        print(f"  {i + 1:3d}. [{kind:<9}] {u['level']:<14} {u['title'][:44]:<44} "
               f"[{rel}:{u['line']}] ~{u['paragraphs']}p")
     total_words = sum(u["words"] for u in units)
-    n_leaf = sum(1 for i, u in enumerate(units)
-                 if not (i + 1 < len(units) and rank[units[i + 1]["level"]] > rank[u["level"]]))
+    n_leaf = sum(1 for i in range(len(units)) if not is_container(i))
     print(f"\nTotals: {len(units)} units ({n_leaf} leaves), ~{total_words} words.")
 
 

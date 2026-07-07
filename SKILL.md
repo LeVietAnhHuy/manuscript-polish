@@ -11,7 +11,7 @@ description: >-
   optional 10-pass, 5-reviewer adversarial panel for deep journal-level revision.
   Use this WHENEVER the user wants to polish, proofread, refine, tighten, "de-AI",
   clean up, or revise a paper / manuscript / .tex / draft, prepare a submission
-  (e.g., IoT-J, TNSE, JSAC, APCC, TNSE, IEEE/ACM/Elsevier venues), run a journal-level
+  (e.g., IoT-J, TNSE, JSAC, APCC, IEEE/ACM/Elsevier venues), run a journal-level
   or adversarial review, reduce overclaiming, improve academic writing and flow,
   restructure sections, or fix a bibliography — even if they never say the words
   "skill" or "polish".
@@ -57,6 +57,11 @@ Each level has a different job, so re-reading is never wasted:
 This traversal is the skeleton of both modes below. Do not skip the re-read steps — they
 are where most real improvements happen.
 
+The **title, the abstract, and every figure/table caption are units too**, not just the body
+sections. Give the abstract its own dedicated leaf pass — it is read first by every reviewer
+and is usually the worst offender for overclaiming and stacked-clause sentences. Captions get
+the same sentence-level care as prose.
+
 ---
 
 ## Two modes
@@ -82,10 +87,21 @@ These protect the author from an over-eager editor. Violating them turns a helpf
 into a dangerous one.
 
 1. **Never change technical meaning, math, or claims.** Preserve every equation, symbol,
-   number, label, `\ref`, `\cite`, and units exactly. Do not "fix" a formula unless it is
-   a clear LaTeX **syntax** error or the user explicitly asked for a math correction. If a
-   claim looks wrong or unsupported, do not silently reword it into something new — flag it
-   (see the comment convention below) and let the author decide.
+   number, label, `\ref`, `\cite`, and unit exactly. Do not "fix" a formula unless it is a
+   clear LaTeX **syntax** error or the user explicitly asked for a math correction. When a
+   claim is a problem, which kind decides what you do — this precedence resolves the common
+   "should I reword or flag?" tension:
+   - *Overclaimed but supported* (a real result described too grandly) → size it down to what
+     the paper actually shows (`references/writing-style.md` §3). Safe, do it.
+   - *Unsupported by anything in the paper* (no result, no proof, no citation to size against)
+     → do **not** invent a smaller "result" to replace it. Downgrade it to honest intent
+     ("we aim to reduce…", "the method is designed to…") **and** flag it, or just flag it.
+     Never manufacture a claim the paper cannot back. This case is common when the draft has
+     no evaluation yet.
+   - *Prose that contradicts an unambiguous equation or definition* (e.g., calling a
+     probability "a number of…") → flag it, do not silently rewrite. Rewriting guesses which
+     side is wrong and can quietly change the meaning.
+   Use the flag convention in "Marking flags and candidates" (Step 1) for all of these.
 
 2. **Edit surgically.** Change wording, not substance. Keep the author's voice and the
    paper's terminology. Do not swap a defined term for a synonym — consistent terminology is
@@ -124,6 +140,10 @@ Editing before you understand the project is how you break a build. Spend a few 
    - If it is **not** a git repo: `git init` it (or copy the sources into a
      `review_versions/` working copy) so every change is recoverable. Confirm with the user
      before `git init` on a directory you did not create.
+   - **Record the baseline** so the author can diff later: `git tag baseline` (or note the
+     pre-edit commit hash) and report it. Heads-up: right after you branch, `git diff` shows
+     nothing until you make an edit — that is expected, not a lost-changes bug. Use
+     `git diff baseline` to see the whole polish.
 
 4. **Decide tracked changes.** Ask, or infer from the request:
    - *Reviewable diff wanted* (author wants to see and accept/reject each edit) → use the
@@ -196,7 +216,9 @@ in context:
 For the assigned unit:
   1. Read sentence by sentence. For each sentence, fix:
        - unclear meaning, buried subject, or a sentence doing two jobs → split it
-       - long/comma-heavy sentence (>~30 words, stacked "which/thereby/thus/moreover") → shorten
+       - long/comma-heavy sentence (>~30 words, stacked "which/thereby/thus/moreover") → shorten.
+         Exception: if it is a list/notation/parameter dump, do not shorten — mark it a table
+         candidate and leave the content intact (splitting it just scatters the definitions).
        - overclaim words (solve, guarantee, optimal, comprehensive, superior, significantly...) → size to evidence
        - a difficult word where a simple one is exact → simplify
        - vague term where a precise mechanism exists → name the mechanism
@@ -225,20 +247,27 @@ parent:
   `references/paper-structure.md`)? Are there gaps or overlaps with adjacent sections? Do
   forward/back references (`as shown in Section~\ref{...}`) still hold after edits?
 
-### Marking figure / table / supplement candidates (never fabricate)
+### Marking flags and candidates (never fabricate)
 
-When a paragraph is really a diagram, a table, or belongs in a supplement, do **not** invent
-data or draw a fake figure. Leave a clearly tagged marker so the author can act, and — where
-useful — draft the caption or a table skeleton from text that already exists:
+When something needs the author's judgment, or a paragraph is really a figure/table/supplement
+item, leave a tagged marker instead of guessing or fabricating. In clean/Polish mode the marker
+is a LaTeX comment; in tracked mode it is `\comment[id=CR]{...}` with the same tag text. Use
+this standard tag vocabulary so markers are easy to grep and the final report can collect them:
 
 ```latex
-% [FIGURE CANDIDATE | R2] This paragraph describes a multi-stage pipeline (encode → channel
-% → decode → predict → act). Convert to a workflow figure; suggested caption drafted below.
-% [TABLE CANDIDATE | R2] Six parameters listed in prose (arrival rate, queue size, ...) —
-% move to a parameter table for readability.
-% [MOVE TO SUPPLEMENT | R5] This derivation is useful but interrupts the main flow.
+% [CHECK] A claim, notation, or text-vs-equation issue the author must resolve.
+% [CITATION NEEDED] A statement that appears to need a reference.
+% [FIGURE CANDIDATE] What kind of figure and why; draft a caption below if useful.
+% [TABLE CANDIDATE] What the rows/columns would be; draft a skeleton if useful.
+% [MOVE TO SUPPLEMENT] Why this detail interrupts the main flow.
 ```
 
+In **deep review** add the reviewer id, e.g. `% [CHECK | R1]` or `% [FIGURE CANDIDATE | R2]`,
+so a marker traces back to the persona that raised it. In **Polish mode** the id is optional —
+plain `% [CHECK]` is fine.
+
+For figure/table/supplement candidates, do **not** invent data or draw a fake figure. Mark the
+candidate and, where useful, draft the caption or table skeleton from text that already exists.
 The full decision rules ("when is a paragraph really a figure?") are in
 `references/figures-tables-supplement.md`. Read it before the section-level consolidation.
 
