@@ -17,6 +17,9 @@ Categories:
     transition     sentence-initial Moreover/Furthermore/... (cut if overused)
     long-sentence  a sentence over ~30 words
     comma-heavy    a sentence with 3+ commas
+    abstract-math       math/equation inside the abstract (abstracts should be plain prose)
+    abstract-citation   a \\cite inside the abstract (most venues forbid references there)
+    abstract-crossref   a \\ref/\\eqref inside the abstract (it must stand alone)
 """
 
 import os
@@ -44,6 +47,12 @@ AI_PHRASES = [
 WEASEL = ["very", "extremely", "highly", "vastly", "hugely", "tremendously", "incredibly",
           "basically", "actually", "really", "quite", "fairly"]
 TRANSITION = ["moreover", "furthermore", "additionally", "besides", "thereby"]
+# an abstract must be plain, self-contained prose: no math, no citations, no cross-references
+AB_MATH_RE = re.compile(
+    r"(?<!\\)\$|(?<!\\)\\\(|(?<!\\)\\\[|"
+    r"\\begin\{(?:equation|align|gather|multline|eqnarray|displaymath|math)\*?\}")
+AB_CITE_RE = re.compile(r"\\[a-zA-Z]*cite[a-zA-Z]*\b")
+AB_REF_RE = re.compile(r"\\(?:eqref|ref|autoref|cref|Cref|pageref)\b")
 
 SKIP_ENVS = {"equation", "align", "gather", "multline", "eqnarray", "verbatim",
              "lstlisting", "tikzpicture", "algorithmic", "minted"}
@@ -210,6 +219,32 @@ def lint(rows, only):
     return hits
 
 
+def lint_abstract(rows, only):
+    """Flag math, citations, and cross-references inside the abstract environment.
+
+    An abstract must be plain, self-contained prose. These are high-precision structural
+    signals (actual LaTeX math/cite/ref commands), reported so none slip through.
+    """
+    def want(cat):
+        return not only or cat in only
+
+    hits = []
+    in_ab = False
+    for fpath, lineno, text in rows:
+        if "\\begin{abstract}" in text:
+            in_ab = True
+        if in_ab:
+            if want("abstract-math") and AB_MATH_RE.search(text):
+                hits.append((fpath, lineno, "abstract-math", "math/equation in abstract"))
+            if want("abstract-citation") and AB_CITE_RE.search(text):
+                hits.append((fpath, lineno, "abstract-citation", "citation in abstract"))
+            if want("abstract-crossref") and AB_REF_RE.search(text):
+                hits.append((fpath, lineno, "abstract-crossref", "cross-reference in abstract"))
+        if "\\end{abstract}" in text:
+            in_ab = False
+    return hits
+
+
 def parse_args(argv):
     positional, only = [], None
     i = 0
@@ -238,7 +273,7 @@ def main():
         print(f"No main .tex found under {positional[0]}"); sys.exit(1)
 
     rows = flatten(main_path)
-    hits = lint(rows, only)
+    hits = lint(rows, only) + lint_abstract(rows, only)
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -250,7 +285,8 @@ def main():
     for _, _, cat, _ in hits:
         counts[cat] = counts.get(cat, 0) + 1
     print("\nSummary (heuristic — confirm every hit by reading):")
-    for cat in ["overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
+    for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
+                "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):
             print(f"  {cat:<14} {counts[cat]}")

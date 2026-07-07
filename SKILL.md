@@ -59,6 +59,13 @@ sections. Give the abstract its own dedicated leaf pass — it is read first by 
 and is usually the worst offender for overclaiming and stacked-clause sentences. Captions get
 the same sentence-level care as prose.
 
+The abstract also has hard hygiene rules, because it must stand alone: **no equations or inline
+math, no citations, no cross-references (`\ref`/"Fig. 1"/"Section II"), and no undefined
+acronyms.** Flag any violation (do not silently delete — see non-negotiable #1) and propose a
+plain-words rephrasing. The full rules are in `references/paper-structure.md`, and
+`scripts/style_lint.py` reports them mechanically as `abstract-math`, `abstract-citation`, and
+`abstract-crossref` so nothing slips through.
+
 ---
 
 ## Two modes

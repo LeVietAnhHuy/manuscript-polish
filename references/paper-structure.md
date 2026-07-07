@@ -53,6 +53,30 @@ interpretation, not just a setup description.
 
 ---
 
+## The abstract — special constraints
+
+The abstract is plain, self-contained prose. It is read first and often in isolation (search
+results, indexing services, tables of contents), so it must stand alone with no dependency on
+the body. Enforce the rules below. Because they change content, **flag rather than delete** —
+propose the fix and let the author confirm.
+
+- **No equations or displayed math, and avoid inline math.** An abstract should not contain
+  `\begin{equation}` or `$...$`. State the idea in words ("the success probability falls as
+  the offered load grows") and keep the formula in the body. Flag any math with `% [CHECK]`
+  and a suggested wording; apply the rephrasing only if it clearly preserves the meaning.
+- **No citations.** No `\cite` in the abstract — most venues forbid references here. Flag it
+  and move any point that depends on a reference into the body.
+- **No cross-references.** No `\ref`, `\eqref`, "Fig. 1", "Table II", or "Section III". The
+  abstract cannot assume the reader has seen the body. Flag and rephrase in self-contained
+  terms.
+- **Define or avoid acronyms.** Expand an acronym on first use, or avoid it. Do not leave an
+  undefined acronym in the abstract.
+- **No new claims and no overclaiming.** The same claim-sizing rule as everywhere applies, and
+  the abstract must not promise more than the paper delivers.
+
+`python scripts/style_lint.py <file>` reports `abstract-math`, `abstract-citation`, and
+`abstract-crossref` hits so none of these slip through.
+
 ## The job of each section (use this to audit)
 
 1. **Introduction** — Why does this problem matter? What is the gap? What does this paper do?
