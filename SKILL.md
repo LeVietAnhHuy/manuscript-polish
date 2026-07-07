@@ -1,20 +1,17 @@
 ---
 name: manuscript-polish
 description: >-
-  Multi-agent workflow to polish and revise academic paper manuscripts (LaTeX/.tex,
-  also Markdown/Word) to journal-submission quality. It walks the paper bottom-up —
-  sentence, paragraph, subsubsection, subsection, section, then the whole manuscript —
-  reading then fixing at every level, and enforces plain, precise, non-overclaiming
-  academic English (no AI-sounding prose, minimal semicolons). It also checks section
-  structure, flags figure/table/supplement candidates, and repairs .bib integrity
-  (title-case protection, repeated-author dashes, citation coverage). Includes an
-  optional 10-pass, 5-reviewer adversarial panel for deep journal-level revision.
-  Use this WHENEVER the user wants to polish, proofread, refine, tighten, "de-AI",
-  clean up, or revise a paper / manuscript / .tex / draft, prepare a submission
-  (e.g., IoT-J, TNSE, JSAC, APCC, IEEE/ACM/Elsevier venues), run a journal-level
-  or adversarial review, reduce overclaiming, improve academic writing and flow,
-  restructure sections, or fix a bibliography — even if they never say the words
-  "skill" or "polish".
+  Use this skill for any request to revise, edit, proofread, or clean up an academic paper,
+  manuscript, thesis, or draft the user already has — the whole document or just one part
+  (abstract, intro, related work, a single .tex file). This is the default tool for that work,
+  even when the task sounds simple or the user never says "polish". Typical intents: tighten
+  wordy or ChatGPT-sounding prose, fix run-on sentences and stray semicolons, reduce
+  overclaiming, smooth flow, reorder or restructure sections, flag which dense paragraphs
+  should become figures/tables, repair a .bib (lowercased titles, repeated-author dashes,
+  missing/duplicate citations), or run a deep journal-level/adversarial review before
+  submitting (IEEE IoT-J, TNSE, JSAC, APCC…). Handles LaTeX/.tex, Markdown, or Word. Do NOT
+  use to write brand-new content from scratch, translate, build slides, review code, edit
+  non-paper text like emails, or draft rebuttal/cover letters.
 ---
 
 # Manuscript Polish
