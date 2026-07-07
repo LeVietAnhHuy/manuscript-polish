@@ -83,6 +83,17 @@ Pick based on what the user asked for. When unsure, ask; default to Polish.
   `references/review-panel.md` and follow it exactly. The bottom-up traversal still
   governs how each pass reads and edits.
 
+**Scoped polish (one part only).** When the user names a specific part — "just the abstract",
+"only the intro", "tighten Section III", "fix this one paragraph" — polish only that unit. Run
+the same read-then-fix on it plus the unit re-read, and apply the part-specific checks (e.g.,
+the abstract hygiene rules for an abstract). Do **not** run the whole-manuscript consolidation
+or the 10-pass panel — that is far more than was asked. Still do one lightweight consistency
+check: the edited part must not drift from the rest of the paper. Keep the same terminology,
+symbols, method name, and claim sizes as the body, and do not introduce a term the body never
+uses. Read the surrounding context first so you match it, edit only the named part, then report
+what you changed and flagged and leave the rest untouched. This is the common case for a quick
+request, so default to it whenever the user points at one part rather than the whole paper.
+
 ---
 
 ## Non-negotiables (why they matter)
@@ -316,7 +327,15 @@ it in the final report.
    ```
    Do not ship a change that breaks the build. If you cannot compile in this environment,
    say so in the report and at minimum sanity-check brace/`$`/environment balance around
-   your edits.
+   your edits. After a successful build, scan the log for layout overflows that push a figure
+   or table into the other column or off the page:
+   ```bash
+   grep -n "Overfull" *.log | head        # wide floats / lines spilling past the column or page
+   ```
+   Fix these (see `references/figures-tables-supplement.md`): a wide float in a two-column
+   layout should use `figure*`/`table*` (full width) or be resized; an over-wide table can drop
+   to `\small`/`\footnotesize` or `\resizebox`. Only worry about large overfulls (more than a
+   few points); tiny ones are usually harmless.
 
 2. **Review the diff.** `git status` and `git diff --stat`, then read the actual diff of a
    few units to make sure edits are surgical and no math moved.

@@ -238,6 +238,35 @@ prose, not to domain vocabulary.
 
 ---
 
+## 10. Space economy — the fewest pages that stay clear
+
+Page limits are real, and a tight paper reads as a confident one. The target is the **shortest
+length that is still complete and clear** — not the shortest length, and not padding to look
+substantial. Reach it by compression, never by cutting substance.
+
+How to shorten without losing anything:
+
+- **Cut filler, not content.** Every AI-voice phrase (§6), empty opener, and redundant
+  restatement is free space. Removing "It is worth noting that" costs the reader nothing.
+- **Say it once.** If the intro, the method, and the conclusion each state the same
+  contribution in similar words, keep the sharpest and trim the echoes. Repetition across
+  sections is the biggest hidden source of length.
+- **Prefer the compact construction.** "in order to" → "to"; "due to the fact that" →
+  "because"; a five-word wind-up before the verb → start with the subject. §4 and §8 already
+  do most of this; here the *motive* is also page count.
+- **Move detail out, do not delete it.** A dense derivation, a parameter list, or an extra
+  ablation belongs in a figure, a table, or the supplement — not deleted (non-negotiable #2).
+  A table often replaces a whole paragraph and is easier to read (see
+  `references/figures-tables-supplement.md`).
+- **Mind the layout tax.** In a fixed format, a paragraph whose last line holds a single word,
+  or a heading stranded at the bottom of a column, wastes a line or more. Tightening that
+  paragraph by a few words can reclaim a whole line. Do this only when the wording stays
+  natural — never mangle a sentence to save a line.
+
+What space economy is **not**: deleting a needed explanation, dropping a limitation to look
+stronger, removing a citation, or shrinking figures until they are unreadable. If cutting
+would remove information the reader needs, relocate it instead of deleting it.
+
 ## What "fixing" a sentence looks like (worked micro-edits)
 
 - *Overclaim:* "significantly outperforms all existing methods" → "achieves lower RAR waste

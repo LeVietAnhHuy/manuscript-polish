@@ -152,6 +152,49 @@ starting point.
 
 ---
 
+## Captions and fit (length, placement, no overflow)
+
+Once a figure or table exists, two things go wrong most often: the caption is either useless or
+a paragraph long, and the float overflows the column or the page. Both are easy to catch.
+
+### Caption length and quality
+A caption should be **just enough** — say what the reader is looking at and the single takeaway,
+then stop. Not a bare label, not a re-derivation of the method.
+
+- **Too short (a label):** "Fig. 3. Results." → the reader learns nothing.
+- **Too long (a paragraph):** a caption that re-explains the whole setup and every curve
+  belongs partly in the body, not the caption.
+- **Right:** "Fig. 3. Access success probability versus offered load. The proposed method keeps
+  more RAR capacity for real devices than the collision-only baseline." One or two sentences,
+  self-contained enough to grasp the figure without hunting through the text.
+- **Placement convention:** a **table** caption goes *above* the table; a **figure** caption
+  goes *below* the figure (IEEE/most venues). `style_lint.py` flags captions over ~40 words as
+  `long-caption` — shorten or move the excess into the text.
+
+### The float must fit — no overflow into the next column or off the page
+A figure or table that spills past the column edge (very common in two-column IEEE formats) is
+an instant reviewer complaint. The reliable detector is the build log: `grep "Overfull" *.log`.
+Fixes, in order of preference:
+
+- **Wide content → full-width float.** Use the starred environments `figure*` / `table*`, which
+  span both columns, instead of forcing wide content into one column.
+- **Size the graphic to the column.** `\includegraphics[width=\columnwidth]{...}` (or
+  `\linewidth`). Never include a graphic with no size option — at natural size it usually
+  overflows. `style_lint.py` flags this as `figure-nowidth`.
+- **Shrink a wide table.** Drop the table body to `\small` or `\footnotesize`, abbreviate
+  column headers, or wrap it in `\resizebox{\columnwidth}{!}{...}` (use resizebox sparingly —
+  it also scales the font, which can become tiny).
+- **Do not** fix overflow by deleting columns or data. Compress the presentation, not the
+  content — and if a table is genuinely too big, move the full version to the supplement and
+  keep a reduced version in the main text.
+
+Leave a marker when you spot a likely-overflowing float but cannot compile to confirm:
+
+```latex
+% [CHECK] Wide table in a two-column layout — likely overflows the column. Use table* or \small.
+% [CHECK] \includegraphics has no width — set width=\columnwidth to avoid overflow.
+```
+
 ## Guardrails
 
 - Never fabricate data, results, or a figure image. You mark candidates and, at most, draft a

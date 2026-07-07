@@ -20,6 +20,8 @@ Categories:
     abstract-math       math/equation inside the abstract (abstracts should be plain prose)
     abstract-citation   a \\cite inside the abstract (most venues forbid references there)
     abstract-crossref   a \\ref/\\eqref inside the abstract (it must stand alone)
+    long-caption        a figure/table caption over ~40 words (usually too long)
+    figure-nowidth      \\includegraphics with no width/scale (risks overflowing the column)
 """
 
 import os
@@ -53,6 +55,9 @@ AB_MATH_RE = re.compile(
     r"\\begin\{(?:equation|align|gather|multline|eqnarray|displaymath|math)\*?\}")
 AB_CITE_RE = re.compile(r"\\[a-zA-Z]*cite[a-zA-Z]*\b")
 AB_REF_RE = re.compile(r"\\(?:eqref|ref|autoref|cref|Cref|pageref)\b")
+# figure/table caption length and graphic sizing (overflow risk)
+CAPTION_RE = re.compile(r"\\caption\*?\s*(?:\[[^\]]*\])?\s*\{")
+INCLUDEGFX_RE = re.compile(r"\\includegraphics\s*(\[[^\]]*\])?\s*\{")
 
 SKIP_ENVS = {"equation", "align", "gather", "multline", "eqnarray", "verbatim",
              "lstlisting", "tikzpicture", "algorithmic", "minted"}
@@ -64,7 +69,7 @@ STRUCT_RE = re.compile(
     r"\\(?:sub)*section\*?\b|"
     r"\\(?:paragraph|subparagraph|title|author|maketitle|begin|end|bibliography|"
     r"bibliographystyle|documentclass|usepackage|appendix|appendices|label|"
-    r"bstctlcite|IEEEpeerreviewmaketitle)\b")
+    r"bstctlcite|IEEEpeerreviewmaketitle|caption|includegraphics)\b")
 
 
 def strip_comment(line):
@@ -77,6 +82,19 @@ def strip_comment(line):
             break
         out.append(c); i += 1
     return "".join(out)
+
+
+def matching_brace(s, i):
+    """Index of the brace matching s[i]=='{', or -1 if unbalanced."""
+    depth = 0
+    for j in range(i, len(s)):
+        if s[j] == "{":
+            depth += 1
+        elif s[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return j
+    return -1
 
 
 def strip_math(text):
@@ -245,6 +263,44 @@ def lint_abstract(rows, only):
     return hits
 
 
+def _join_rows(rows):
+    """Join rows into one string plus per-character line/file maps for offset lookup."""
+    parts, char_line, char_file = [], [], []
+    for fpath, lineno, t in rows:
+        piece = t + "\n"
+        parts.append(piece)
+        char_line.extend([lineno] * len(piece))
+        char_file.extend([fpath] * len(piece))
+    return "".join(parts), char_line, char_file
+
+
+def lint_floats(rows, only):
+    """Flag over-long captions and graphics with no size (an overflow risk)."""
+    def want(cat):
+        return not only or cat in only
+
+    if only and not ({"long-caption", "figure-nowidth"} & only):
+        return []
+    joined, cline, cfile = _join_rows(rows)
+    hits = []
+    if want("long-caption"):
+        for m in CAPTION_RE.finditer(joined):
+            brace = m.end() - 1
+            end = matching_brace(joined, brace)
+            if end < 0:
+                continue
+            wc = len(re.findall(r"[A-Za-z][A-Za-z\-']+", joined[brace + 1:end]))
+            if wc > 40:
+                hits.append((cfile[m.start()], cline[m.start()], "long-caption", f"~{wc} words"))
+    if want("figure-nowidth"):
+        for m in INCLUDEGFX_RE.finditer(joined):
+            opt = m.group(1) or ""
+            if not re.search(r"width|height|scale", opt):
+                hits.append((cfile[m.start()], cline[m.start()], "figure-nowidth",
+                             "no width/scale — may overflow"))
+    return hits
+
+
 def parse_args(argv):
     positional, only = [], None
     i = 0
@@ -273,7 +329,7 @@ def main():
         print(f"No main .tex found under {positional[0]}"); sys.exit(1)
 
     rows = flatten(main_path)
-    hits = lint(rows, only) + lint_abstract(rows, only)
+    hits = lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -286,6 +342,7 @@ def main():
         counts[cat] = counts.get(cat, 0) + 1
     print("\nSummary (heuristic — confirm every hit by reading):")
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
+                "long-caption", "figure-nowidth",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):
