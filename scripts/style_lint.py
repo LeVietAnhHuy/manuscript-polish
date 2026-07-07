@@ -22,6 +22,7 @@ Categories:
     abstract-crossref   a \\ref/\\eqref inside the abstract (it must stand alone)
     long-caption        a figure/table caption over ~40 words (usually too long)
     figure-nowidth      \\includegraphics with no width/scale (risks overflowing the column)
+    misplaced-future-work  future-work wording outside a Conclusion/Discussion section
 """
 
 import os
@@ -58,6 +59,15 @@ AB_REF_RE = re.compile(r"\\(?:eqref|ref|autoref|cref|Cref|pageref)\b")
 # figure/table caption length and graphic sizing (overflow risk)
 CAPTION_RE = re.compile(r"\\caption\*?\s*(?:\[[^\]]*\])?\s*\{")
 INCLUDEGFX_RE = re.compile(r"\\includegraphics\s*(\[[^\]]*\])?\s*\{")
+# future-work language belongs in the Conclusion, not the model/method/results
+SECTION_TITLE_RE = re.compile(r"\\section\*?\s*\{")
+SUBSECTION_TITLE_RE = re.compile(r"\\subsection\*?\s*\{")
+ALLOWED_FUTURE = ("conclusion", "concluding", "future", "outlook", "discussion",
+                  "summary", "remarks", "closing", "perspective")
+FUTURE_RE = re.compile(
+    r"future work|future research|future direction|future extension|in the future|"
+    r"for future work|as future work|left (?:for|to) future|"
+    r"leave (?:it |this |them )?(?:for|to) future", re.IGNORECASE)
 
 SKIP_ENVS = {"equation", "align", "gather", "multline", "eqnarray", "verbatim",
              "lstlisting", "tikzpicture", "algorithmic", "minted"}
@@ -95,6 +105,18 @@ def matching_brace(s, i):
             if depth == 0:
                 return j
     return -1
+
+
+def braced_title(text, cmd_regex):
+    """Return the brace-balanced argument of a command matched by cmd_regex, or None."""
+    m = cmd_regex.search(text)
+    if not m:
+        return None
+    b = text.find("{", m.start())
+    if b < 0:
+        return ""
+    e = matching_brace(text, b)
+    return text[b + 1:e] if e > 0 else text[b + 1:]
 
 
 def strip_math(text):
@@ -301,6 +323,37 @@ def lint_floats(rows, only):
     return hits
 
 
+def lint_misplaced(rows, only):
+    """Flag future-work language that appears outside a Conclusion/Discussion-type section."""
+    if only and "misplaced-future-work" not in only:
+        return []
+    hits = []
+    sec_title = None
+    sub_title = None
+    started = False
+    for fpath, lineno, text in rows:
+        if "\\begin{document}" in text:
+            started = True
+        if not started:
+            continue
+        if SECTION_TITLE_RE.search(text):
+            sec_title = braced_title(text, SECTION_TITLE_RE) or ""
+            sub_title = None
+            continue
+        if SUBSECTION_TITLE_RE.search(text):
+            sub_title = braced_title(text, SUBSECTION_TITLE_RE) or ""
+            continue
+        if sec_title is None:          # still in front matter / abstract
+            continue
+        titles = (sec_title + " " + (sub_title or "")).lower()
+        if any(k in titles for k in ALLOWED_FUTURE):
+            continue
+        if FUTURE_RE.search(text):
+            hits.append((fpath, lineno, "misplaced-future-work",
+                         f"future-work language in section '{sec_title[:30]}'"))
+    return hits
+
+
 def parse_args(argv):
     positional, only = [], None
     i = 0
@@ -329,7 +382,8 @@ def main():
         print(f"No main .tex found under {positional[0]}"); sys.exit(1)
 
     rows = flatten(main_path)
-    hits = lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
+    hits = (lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
+            + lint_misplaced(rows, only))
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -342,7 +396,7 @@ def main():
         counts[cat] = counts.get(cat, 0) + 1
     print("\nSummary (heuristic — confirm every hit by reading):")
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
-                "long-caption", "figure-nowidth",
+                "long-caption", "figure-nowidth", "misplaced-future-work",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):

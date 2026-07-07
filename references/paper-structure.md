@@ -154,6 +154,36 @@ figure-candidate finding — reviewers strongly prefer to *see* the system. Conv
 
 ---
 
+## Content fit — keep each paragraph in the section it belongs to
+
+A section must contain only material that serves its role (above). A common defect is foreign
+content that drifted into the wrong place — most often a **future-work sentence sitting in the
+System Model, Method, or Results**, but also a result stated inside the Method, motivation
+repeated inside the System Model, or a related-work comparison buried in the Introduction.
+
+On every section re-read, check each paragraph: *does this belong to this section's job?* If
+not, name its correct home and flag it. Do **not** silently move content — moving changes the
+structure and can break `\ref`/`\label` and paragraph flow. Move it yourself only when it is a
+clean, self-contained paragraph and the destination is unambiguous; otherwise leave a marker:
+
+```latex
+% [CHECK] This future-work sentence belongs in the Conclusion, not the System Model.
+% [CHECK] This paragraph reports a result; it belongs in Results, not the Proposed Method.
+```
+
+Where things belong:
+
+- **Future work, "we plan to…", "left for future study"** → the Conclusion (or a dedicated
+  Future Work subsection). Never scattered through the model, method, or results.
+- **Results, numbers, comparisons** → Results/Evaluation, not the Method or System Model.
+- **Motivation, importance, the gap** → the Introduction, not the System Model.
+- **Deep implementation detail or a long derivation** → the Method or the supplement, not the
+  System Model.
+
+`scripts/style_lint.py` flags future-work phrasing found outside a Conclusion/Discussion/
+Future-Work section as `misplaced-future-work`. The general case (any off-topic paragraph)
+needs your judgment on the re-read — the lint only catches the future-work instance.
+
 ## What a structural finding looks like
 
 When a section does not serve its role, raise it concretely, for example:

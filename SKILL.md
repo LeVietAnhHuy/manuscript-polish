@@ -259,8 +259,12 @@ parent:
   any dense paragraph now clearly want to be a figure, table, or supplement item? Leave a
   marker (see below), do not fabricate the figure.
 - **Section re-read:** Does the section deliver the role its type promises (see
-  `references/paper-structure.md`)? Are there gaps or overlaps with adjacent sections? Do
-  forward/back references (`as shown in Section~\ref{...}`) still hold after edits?
+  `references/paper-structure.md`)? Are there gaps or overlaps with adjacent sections? Does
+  **every paragraph actually belong to this section's job**, or has foreign content drifted in
+  — a future-work sentence sitting in the System Model, a result stated inside the Method,
+  motivation repeated in the model? Flag misplaced content and name its correct home (do not
+  silently move it). Do forward/back references (`as shown in Section~\ref{...}`) still hold
+  after edits?
 
 ### Marking flags and candidates (never fabricate)
 
