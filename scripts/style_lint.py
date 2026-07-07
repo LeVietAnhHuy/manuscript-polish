@@ -22,6 +22,7 @@ Categories:
     abstract-crossref   a \\ref/\\eqref inside the abstract (it must stand alone)
     long-caption        a figure/table caption over ~40 words (usually too long)
     figure-nowidth      \\includegraphics with no width/scale (risks overflowing the column)
+    crowded-figure      2+ narrow panels side-by-side in a one-column figure (use figure*/stack)
     misplaced-future-work  future-work wording outside a Conclusion/Discussion section
 """
 
@@ -59,6 +60,10 @@ AB_REF_RE = re.compile(r"\\(?:eqref|ref|autoref|cref|Cref|pageref)\b")
 # figure/table caption length and graphic sizing (overflow risk)
 CAPTION_RE = re.compile(r"\\caption\*?\s*(?:\[[^\]]*\])?\s*\{")
 INCLUDEGFX_RE = re.compile(r"\\includegraphics\s*(\[[^\]]*\])?\s*\{")
+# narrow panels crammed side-by-side in a single-column figure
+SUBFIG_RE = re.compile(r"\\begin\{subfigure\}\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}")
+GFX_WIDTH_RE = re.compile(r"width\s*=\s*(\d*\.?\d+)\s*\\(?:columnwidth|linewidth|textwidth)")
+WIDTH_FACTOR_RE = re.compile(r"(\d*\.?\d+)\s*\\(?:columnwidth|linewidth|textwidth)")
 # future-work language belongs in the Conclusion, not the model/method/results
 SECTION_TITLE_RE = re.compile(r"\\section\*?\s*\{")
 SUBSECTION_TITLE_RE = re.compile(r"\\subsection\*?\s*\{")
@@ -323,6 +328,47 @@ def lint_floats(rows, only):
     return hits
 
 
+def lint_figures(rows, only):
+    """Flag two or more narrow panels packed side-by-side in a single-column figure.
+
+    A subfigure or graphic sized at <=0.6 column widths is a side-by-side panel; two of them in
+    a non-starred figure means each is ~half a ~3.5in column, usually too small for an axis plot.
+    Vertical stacks (full-width panels) and figure* (two-column) are not flagged.
+    """
+    if only and "crowded-figure" not in only:
+        return []
+    hits = []
+    in_fig = is_star = False
+    fig_line = fig_file = None
+    narrow = 0
+    for fpath, lineno, text in rows:
+        if "\\begin{figure*}" in text:
+            in_fig, is_star, narrow = True, True, 0
+            fig_line, fig_file = lineno, fpath
+            continue
+        if "\\begin{figure}" in text:
+            in_fig, is_star, narrow = True, False, 0
+            fig_line, fig_file = lineno, fpath
+            continue
+        if "\\end{figure}" in text or "\\end{figure*}" in text:
+            if in_fig and not is_star and narrow >= 2:
+                hits.append((fig_file, fig_line, "crowded-figure",
+                             f"{narrow} narrow panels side-by-side in a one-column figure"))
+            in_fig = is_star = False
+            narrow = 0
+            continue
+        if in_fig and not is_star:
+            for m in SUBFIG_RE.finditer(text):
+                fm = WIDTH_FACTOR_RE.search(m.group(1))
+                if fm and float(fm.group(1)) <= 0.6:
+                    narrow += 1
+            for m in INCLUDEGFX_RE.finditer(text):
+                wm = GFX_WIDTH_RE.search(m.group(1) or "")
+                if wm and float(wm.group(1)) <= 0.6:
+                    narrow += 1
+    return hits
+
+
 def lint_misplaced(rows, only):
     """Flag future-work language that appears outside a Conclusion/Discussion-type section."""
     if only and "misplaced-future-work" not in only:
@@ -383,7 +429,7 @@ def main():
 
     rows = flatten(main_path)
     hits = (lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
-            + lint_misplaced(rows, only))
+            + lint_figures(rows, only) + lint_misplaced(rows, only))
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -396,7 +442,7 @@ def main():
         counts[cat] = counts.get(cat, 0) + 1
     print("\nSummary (heuristic — confirm every hit by reading):")
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
-                "long-caption", "figure-nowidth", "misplaced-future-work",
+                "long-caption", "figure-nowidth", "crowded-figure", "misplaced-future-work",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):

@@ -152,6 +152,75 @@ starting point.
 
 ---
 
+## Figure quality and layout
+
+A figure earns its space only if the reader understands it at a glance, on paper, without
+zooming. Apply this checklist and the layout rule to every figure.
+
+### One figure, one message
+Each figure answers one clear question ("does the certified bound predict the collapse region as
+storm size grows?"). A figure trying to answer several questions at once becomes unreadable —
+split it.
+
+### Readable at 100% (print and on-screen PDF)
+A beautiful figure with tiny text is a broken figure. Minimum bar: axis labels, tick labels, and
+legend all readable without zooming; lines thick enough and markers large enough to tell apart;
+a self-contained caption. For IEEE two-column, text *inside* the figure should end up roughly
+8–10 pt after placement. If the in-figure text renders much smaller than the caption, the figure
+was scaled down too hard — enlarge or simplify the source, do not just shrink it to fit.
+
+### No long title inside the plot
+Drop the in-plot title, or keep it very short, and put the detail in the caption. Do not bake
+`Certified operating curve at fixed per-cell C_RAR (pool R*M=2048)` into the plot — it crowds
+the axes. Keep only something like `R_pass vs. Q_k`, or nothing if the caption already says it.
+
+### Caption: self-contained but not overloaded
+Say what the figure tests, the main condition, what the curves/markers mean, and the single
+insight. Do not repack formulas already in the text. (Length and placement rules are in
+"Captions and fit" below.)
+
+### Visual encoding survives grayscale
+Distinguish curves by line style **and** marker shape **and** label — not by color alone. Many
+reviewers print in grayscale, where color-only encoding collapses into identical grey lines.
+
+### Layout: never crowd plots side-by-side in one column
+An IEEE column is ~3.5 in wide. Two subfigures placed side-by-side in one column
+(`0.48\columnwidth` each ≈ 1.7 in) are almost always too small for a technical plot with axes, a
+legend, or a log scale. Decide with this rule:
+
+- **Two or more plots with x/y axes → default to `figure*`** (spans both columns; each panel
+  gets close to a full column and stays readable). Best when both panels matter and the reader
+  compares them side by side.
+- **Want to stay in one column → stack the panels vertically, not horizontally.** Taller figure,
+  but each panel keeps full-column width and stays readable.
+- **Each panel is an independent result → split into two separate figures.** Cleanest when each
+  caption is long or each plot carries its own insight.
+- **Forced to keep two panels in one column → simplify hard:** drop in-plot titles, use one
+  shared legend outside the plots, fewer ticks, thicker lines, bigger markers, shorter axis
+  labels, and move detail like "(3000 seeds)" into the caption.
+
+Side-by-side-in-one-column is acceptable only for *simple* figures — a small diagram, a
+qualitative image, or a plot with very little text. For axis/legend/log-scale plots, do not do
+it. `scripts/style_lint.py` flags two or more narrow panels packed into a single-column `figure`
+as `crowded-figure`; the fix is `figure*` or a vertical stack.
+
+Minimal `figure*` skeleton for two axis plots:
+
+```latex
+\begin{figure*}[t]
+  \centering
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{fig_a.pdf}
+    \caption{Residual-backlog validation.}\label{fig:a}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{fig_b.pdf}
+    \caption{Reliability lower-bound validation.}\label{fig:b}
+  \end{subfigure}
+  \caption{In-window rebuild-term validation under Poisson arrivals.}\label{fig:val}
+\end{figure*}
+```
+
 ## Captions and fit (length, placement, no overflow)
 
 Once a figure or table exists, two things go wrong most often: the caption is either useless or
