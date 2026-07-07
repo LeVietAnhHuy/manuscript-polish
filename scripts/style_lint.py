@@ -23,6 +23,7 @@ Categories:
     long-caption        a figure/table caption over ~40 words (usually too long)
     figure-nowidth      \\includegraphics with no width/scale (risks overflowing the column)
     crowded-figure      2+ narrow panels side-by-side in a one-column figure (use figure*/stack)
+    long-equation       a single display-math line wide enough to overflow the column
     misplaced-future-work  future-work wording outside a Conclusion/Discussion section
 """
 
@@ -64,6 +65,12 @@ INCLUDEGFX_RE = re.compile(r"\\includegraphics\s*(\[[^\]]*\])?\s*\{")
 SUBFIG_RE = re.compile(r"\\begin\{subfigure\}\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}")
 GFX_WIDTH_RE = re.compile(r"width\s*=\s*(\d*\.?\d+)\s*\\(?:columnwidth|linewidth|textwidth)")
 WIDTH_FACTOR_RE = re.compile(r"(\d*\.?\d+)\s*\\(?:columnwidth|linewidth|textwidth)")
+# a single display-math line this wide (macros counted as ~1 glyph) likely overflows a column
+MATH_ENVS = {"equation", "align", "gather", "multline", "eqnarray", "displaymath",
+             "alignat", "flalign", "ieeeeqnarray"}
+MATH_BEGIN_RE = re.compile(r"\\begin\{([A-Za-z]+)\*?\}")
+MATH_END_RE = re.compile(r"\\end\{([A-Za-z]+)\*?\}")
+EQUATION_GLYPH_LIMIT = 52
 # future-work language belongs in the Conclusion, not the model/method/results
 SECTION_TITLE_RE = re.compile(r"\\section\*?\s*\{")
 SUBSECTION_TITLE_RE = re.compile(r"\\subsection\*?\s*\{")
@@ -369,6 +376,47 @@ def lint_figures(rows, only):
     return hits
 
 
+def _norm_math_len(s):
+    """Rough rendered width of a math line (heuristic).
+
+    Delimiters/spacing add nothing; wide operators (sum/prod/int, frac, sqrt) count for more;
+    every other macro counts as ~one glyph, as does each ordinary symbol.
+    """
+    s = s.replace("\\\\", " ").replace("&", " ")
+    s = re.sub(r"\\(?:left|right|big|Big|bigg|Bigg)[lr]?\b", "", s)
+    s = re.sub(r"\\(?:sum|prod|int|oint|iint|iiint|bigcup|bigcap|coprod)\b", "xxx", s)
+    s = re.sub(r"\\(?:frac|dfrac|sqrt|binom|overline|underline|hat|widehat|tilde)\b", "xx", s)
+    s = re.sub(r"\\[a-zA-Z]+", "x", s)        # any other macro renders as ~one symbol
+    s = re.sub(r"[\s{}$^_]", "", s)
+    return len(s)
+
+
+def lint_equations(rows, only):
+    """Flag a single display-math line wide enough to overflow the column (a break candidate)."""
+    if only and "long-equation" not in only:
+        return []
+    hits = []
+    depth = 0
+    for fpath, lineno, text in rows:
+        begins = [m.group(1).lower() for m in MATH_BEGIN_RE.finditer(text)]
+        ends = [m.group(1).lower() for m in MATH_END_RE.finditer(text)]
+        in_math = depth > 0 or any(b in MATH_ENVS for b in begins)
+        if in_math:
+            residual = re.sub(r"\\(?:begin|end)\{[A-Za-z]+\*?\}", " ", text)
+            residual = re.sub(r"\\label\{[^}]*\}", " ", residual)
+            n = _norm_math_len(residual)
+            if n > EQUATION_GLYPH_LIMIT:
+                hits.append((fpath, lineno, "long-equation",
+                             f"~{n} glyphs on one math line — may overflow; break it"))
+        for b in begins:
+            if b in MATH_ENVS:
+                depth += 1
+        for e in ends:
+            if e in MATH_ENVS:
+                depth = max(0, depth - 1)
+    return hits
+
+
 def lint_misplaced(rows, only):
     """Flag future-work language that appears outside a Conclusion/Discussion-type section."""
     if only and "misplaced-future-work" not in only:
@@ -429,7 +477,8 @@ def main():
 
     rows = flatten(main_path)
     hits = (lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
-            + lint_figures(rows, only) + lint_misplaced(rows, only))
+            + lint_figures(rows, only) + lint_equations(rows, only)
+            + lint_misplaced(rows, only))
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -442,7 +491,8 @@ def main():
         counts[cat] = counts.get(cat, 0) + 1
     print("\nSummary (heuristic — confirm every hit by reading):")
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
-                "long-caption", "figure-nowidth", "crowded-figure", "misplaced-future-work",
+                "long-caption", "figure-nowidth", "crowded-figure", "long-equation",
+                "misplaced-future-work",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):

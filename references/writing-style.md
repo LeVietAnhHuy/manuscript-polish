@@ -267,6 +267,47 @@ What space economy is **not**: deleting a needed explanation, dropping a limitat
 stronger, removing a citation, or shrinking figures until they are unreadable. If cutting
 would remove information the reader needs, relocate it instead of deleting it.
 
+## 11. Equations — fit the column, keep the math intact
+
+A long equation that runs past the column edge (an `Overfull \hbox`, common in two-column
+formats) is a real defect. Fixing it is a **layout** change, not a math change: breaking a wide
+equation across lines, or introducing intermediate symbols, does not alter the mathematics, so
+it is allowed under the "never change the math" rule (SKILL.md non-negotiable #1) — **as long as
+every symbol, operator, and the meaning are preserved exactly.** Never make an equation fit by
+*simplifying the mathematics*; that changes content. If a break might change grouping or meaning
+and you are unsure, flag it with `% [CHECK]` instead of guessing.
+
+How to make a wide equation fit, in order of preference:
+
+1. **Break across lines with a multi-line environment.** Use `align`/`split` (align at the
+   `=`), `multline` (one long expression: first line flush left, last line flush right), or
+   `IEEEeqnarray` (IEEE's recommended tool). Break at a binary operator, and by convention start
+   the continuation line with that operator:
+   ```latex
+   \begin{split}
+   P_s ={}& \text{(first part)} \\
+        &+ \text{(continuation starts with the operator)}
+   \end{split}
+   ```
+2. **Introduce intermediate notation.** Define the bulky sub-expressions once ("let
+   $A = \dots$ and $B = \dots$"), then write the main equation compactly with $A$ and $B$. This
+   usually fits *and* reads better — often the best fix, not merely a space fix.
+3. **Tighten spacing locally.** `\tfrac` instead of `\frac` in a cramped spot, thin spaces, or
+   regrouping — small adjustments that do not touch the math.
+4. **Last resort: shrink.** `\resizebox{\columnwidth}{!}{$...$}` scales the whole equation down.
+   Avoid it — the math font becomes smaller than the body text and inconsistent between
+   equations. Prefer breaking or notation.
+
+Other cases:
+- **Inline math that overflows** → move it into a displayed equation.
+- **A genuinely full-width equation** in a two-column paper → put it in a two-column-spanning
+  float (`\begin{figure*}`/`\begin{table*}`, or an IEEEtran top/bottom strip), not crammed into
+  one column.
+
+Detection: the `grep "Overfull" *.log` check after a build (SKILL.md Step 3) is the reliable
+signal. `scripts/style_lint.py` also flags a very long single-line display equation as
+`long-equation` — a candidate to break; confirm at compile.
+
 ## What "fixing" a sentence looks like (worked micro-edits)
 
 - *Overclaim:* "significantly outperforms all existing methods" → "achieves lower RAR waste

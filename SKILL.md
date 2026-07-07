@@ -117,6 +117,11 @@ into a dangerous one.
      probability "a number of…") → flag it, do not silently rewrite. Rewriting guesses which
      side is wrong and can quietly change the meaning.
    Use the flag convention in "Marking flags and candidates" (Step 1) for all of these.
+   Note the one math edit that IS safe: **reformatting a wide equation to fit the column** —
+   breaking it across lines with `align`/`split`/`multline`, or introducing intermediate
+   symbols — is a *layout* change, not a math change, and is allowed as long as every symbol,
+   operator, and the meaning are preserved. Do not simplify the mathematics to fit. See
+   `references/writing-style.md` §11.
 
 2. **Edit surgically.** Change wording, not substance. Keep the author's voice and the
    paper's terminology. Do not swap a defined term for a synonym — consistent terminology is
