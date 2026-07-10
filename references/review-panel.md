@@ -41,6 +41,37 @@ has sub-agents, spawn one per persona for independence; otherwise adopt each len
 
 ---
 
+## Senior gate — a 4-lens configuration (alternative to the 5-persona panel)
+
+For a "senior review" / "senior gate" pass (invoked in REVIEW-ONLY mode from `SKILL.md`), use
+these four lenses instead of the five personas. They are cheaper and targeted at the senior
+standards S1–S5 (origin: `senior-paper-review/references/review-history.md`). Keep the 5-persona
+panel for full deep review; reach for the 4 lenses when the user asks for the senior gate.
+
+- **R1 — Narrative (S1 + S2).** One continuous narrative, flat letter-style where required. Hunts
+  the seven anti-notes symptoms (writing-style §12): abrupt openings, short-paragraph runs,
+  argument-in-lists, note-headers, duplicated caveats, terminology drift, disconnected paragraphs.
+- **R2 — Clarity (S3).** Every notion glossed at first use (the notion audit); every borrowed
+  formalism carries a correspondence table verified against the standard theory; the two most
+  similar published papers are named (`references/paper-structure.md`).
+- **R3 — Figures/tables (S4).** The rendered-PDF inspection, zoom-inset placement, plot→table
+  conversion, diagram hygiene, and caption rules (`references/figures-tables-supplement.md`).
+- **R4 — Density (S5).** Exact page budget held; the verbose section (habitually Evaluation)
+  compressed while preserving every result number, equation, citation, and label; duplicate
+  caveats and orphan lines removed; build hygiene clean. Report the budget slack.
+
+### Finding format for senior-gate passes
+Each finding is one line:
+
+```
+SEVERITY | file:line | "exact quote" | standard | concrete fix
+```
+
+A finding **without a grep-verifiable quote is discarded** — if you cannot quote it, you have not
+found it. Severity: **MAJOR** (a senior reviewer bounces the paper over it), **MINOR** (draws a
+review comment), **POLISH** (wording). In REVIEW-ONLY mode you stop at findings; apply them only
+after the author asks, then switch to Polish and edit surgically.
+
 ## Per-pass procedure (repeat for passes 1–10)
 
 ### Step 1 — Working copy

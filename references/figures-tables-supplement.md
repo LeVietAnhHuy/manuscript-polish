@@ -264,6 +264,53 @@ Leave a marker when you spot a likely-overflowing float but cannot compile to co
 % [CHECK] \includegraphics has no width — set width=\columnwidth to avoid overflow.
 ```
 
+## Senior figure/table standards (S4)
+
+These come from the senior-review standard **S4** (origin:
+`senior-paper-review/references/review-history.md`) and add to "Figure quality" and "Captions and
+fit" above.
+
+### Inspect the rendered PDF — mandatory for the float pass
+The `.log` catches overfull boxes; it does **not** catch a label sitting on a box border, an arrow
+overlapping a curve, or an inset colliding with the main axis. So for the figure/table pass you
+must **look at the rendered PDF**: read the PDF pages visually, and zoom-crop dense figures to
+pixel level. (Origin: the first senior run found a Figure 1 arrow-label overlapping the box border
+only by pixel-zoom of the rendered PDF — grepping the log would never have caught it.)
+
+### Zoom-inset placement (three rules)
+A magnified inset helps only if placed right. Three consecutive senior corrections on one figure
+produced these:
+1. **Zoom where the curves diverge**, not an arbitrary region — the inset exists to show the
+   difference that matters.
+2. **The inset must not overlap the main curves.** Make headroom (shrink it, or move it to an
+   empty corner) so it covers no data.
+3. **Inset ticks must not collide with the main-axis ticks.** Offset or thin the inset ticks.
+
+### Diagram hygiene
+- **Zero overlaps**, verified on the rendered PDF at pixel zoom — no box-on-box, label-on-border,
+  or arrow-on-curve.
+- A panel `fit=` box (TikZ) must **enclose every annotation it visually claims** — a label that
+  belongs to a panel sits inside that panel's box.
+- **Legends must not wrap an orphan item** onto a line by itself; resize or re-order the legend.
+
+### Plot → table conversion (when the difference is invisible)
+If a plot's curves are visually indistinguishable, convert it to a table (this also saves space —
+see the compression order in `references/supplement-merge.md`). The recipe:
+- **Bold the best value in each row.** If several tie at the printed precision, bold **all** of
+  them — never bold one arbitrarily.
+- **State the % improvement once** — in the caption **or** the body, never both (repeating it is a
+  duplicate; see writing-style §12).
+- **Define every column abbreviation** (e.g., "GT" = ground truth) in the caption or a note.
+
+### Captions (senior tightening)
+In addition to the length/placement rules in "Captions and fit":
+- **1–2 sentences.** Longer means the caption is re-explaining the body.
+- **No internal artifact paths** — a camera-ready caption never contains `e02/REPORT.md`-style
+  build paths or run IDs.
+- **Do not restate the body's interpretation sentence** in the caption; say what the reader is
+  looking at and let the body carry the interpretation once. `scripts/style_lint.py` flags a
+  caption sharing an 8-gram with body prose as `caption-restates-body`.
+
 ## Guardrails
 
 - Never fabricate data, results, or a figure image. You mark candidates and, at most, draft a

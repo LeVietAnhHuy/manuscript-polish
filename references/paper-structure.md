@@ -154,6 +154,51 @@ figure-candidate finding — reviewers strongly prefer to *see* the system. Conv
 
 ---
 
+## Flat letter-style structure (senior standard S2, optional)
+
+Some venues and reviewers want the paper written as one flat narrative — no subsections or
+subsubsections — where topic sentences and transitions carry the internal order, in the standard
+letter arc (problem → model → method → results → close). Use this only when the venue or the user
+asks for it. When it applies:
+
+- The paper carries **no `\subsection`/`\subsubsection`**; each `\section` is continuous prose.
+- Topic sentences and transitions do the work headings would otherwise do.
+- The section re-read gains one extra check: **each paragraph must pick up something from its
+  predecessor** — a paragraph that stands alone breaks the flat narrative (writing-style §12,
+  symptom 7).
+
+`scripts/style_lint.py` reports the subsection count as `subsection-count` — a metric, not a hard
+failure; it should be 0 only when this flat style applies. (Origin: senior-paper-review S2.)
+
+## Notion audit — every notion glossed at first use (senior standard S3)
+
+A domain-adjacent reviewer must never hit an unexplained notion. On the whole-manuscript pass,
+**list the technical notions in order of first use** and verify each has a plain-terms gloss **at
+that first use** — a gloss that only arrives in a later section is a finding, not an excuse.
+`scripts/style_lint.py` offers `acronym-first-use` as a coarse first pass, but the audit is a
+reading task, not a grep. (Origin: the first senior run flagged "Learn-then-Test" and "EVT" used
+before they were explained.)
+
+## Borrowed formalisms need an explicit correspondence (senior standard S3)
+
+When the paper borrows a formalism from another field (a queueing model, an information-theoretic
+bound, a statistical test), it must state an explicit **correspondence between the paper's
+components and the formalism's elements**, verified against the standard theory, ideally as a
+compact mapping table:
+
+| Paper component | Formalism element |
+|---|---|
+| arrivals of access attempts | G/G/1 arrival process |
+| RAR service | G/G/1 server |
+| … | … |
+
+Without the mapping a reviewer cannot check that the borrowed result actually applies. Verify the
+mapping against the textbook theory — do the assumptions of the borrowed result hold here? — and
+flag any mismatch rather than papering over it. As a calibration item for the whole-manuscript
+pass, **name the two most technically similar published papers** and confirm the manuscript is
+positioned against them. (Origin: the first senior run flagged a G/G/1 mapping used without a
+correspondence table.)
+
 ## Content fit — keep each paragraph in the section it belongs to
 
 A section must contain only material that serves its role (above). A common defect is foreign

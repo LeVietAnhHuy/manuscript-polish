@@ -308,6 +308,43 @@ Detection: the `grep "Overfull" *.log` check after a build (SKILL.md Step 3) is 
 signal. `scripts/style_lint.py` also flags a very long single-line display equation as
 `long-equation` — a candidate to break; confirm at compile.
 
+## 12. Anti-"technical notes" — continuous prose, not scaffolding
+
+A journal paper is one continuous narrative, not a set of technical notes. The senior-review
+standard **S1** (origin: `senior-paper-review/references/review-history.md`) names seven symptoms
+that a section has decayed into notes. Treat each as a finding to fix:
+
+1. **Abrupt section opening** — the header does the transition and the first sentence dives into
+   detail. Open instead with a topic sentence that connects to the previous section.
+2. **Runs of very short paragraphs** — three or more consecutive 1–3-sentence paragraphs. Merge
+   them into a developed paragraph with one job.
+3. **Lists carrying the argument** — an `itemize`/`enumerate` doing the reasoning. Prose carries
+   argumentation; keep lists for genuinely enumerable, parallel, non-argumentative items.
+4. **Inline note-headers as scaffolding** — see the dedicated rule below.
+5. **A caveat or definition repeated near-verbatim** in two or more places — see the dedicated
+   rule below.
+6. **Terminology / notation drift** — the same thing under two names, or one symbol reused for
+   two things. Pick one and hold it (this is also correctness, §2).
+7. **A paragraph that picks up nothing from its predecessor** — each paragraph should carry the
+   thread forward. If it stands alone, add the connective topic sentence or reorder.
+
+### Note-headers are a defect
+A paragraph that opens with a bold or italic mini-title — `\textbf{Robustness.}`,
+`\emph{Remark.}`, `\textbf{A1.}` — is scaffolding, not prose. Replace the note-header with a real
+topic sentence that says the same thing in a clause. Keep a label only when it is actually
+cross-referenced elsewhere (e.g., an assumption "A1" cited later); even then, compress its body to
+a one-clause pointer, not a re-argument of the body. (Origin: the first senior run flagged an
+A1–A8 bold note-header register that re-argued body content.) `scripts/style_lint.py` flags these
+as `note-header`.
+
+### State each caveat once
+A qualifier, caveat, or scope statement ("this bound is simulator-internal", "this is not an
+unconditional upper bound") may appear **in full once**. Every later occurrence becomes a bare
+back-reference ("as noted above", "the simulator-internal caveat"), not a restatement. Repeating
+the full caveat wastes space and reads as anxiety. (Evidence from the first senior run:
+"simulator-internal" appeared 4×, "not an unconditional upper bound" 2×.) `scripts/style_lint.py`
+flags long repeated n-grams across sections as `dup-caveat`.
+
 ## What "fixing" a sentence looks like (worked micro-edits)
 
 - *Overclaim:* "significantly outperforms all existing methods" → "achieves lower RAR waste

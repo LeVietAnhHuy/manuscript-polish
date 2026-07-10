@@ -20,10 +20,19 @@ bottom-up traversal plan (which leaf units to polish first). Use it to assign sp
 python scripts/style_lint.py path/to/main.tex
 python scripts/style_lint.py path/to/main.tex --only overclaim,semicolon
 ```
-Flags likely problems as `file:line: [category] detail`:
-`overclaim`, `semicolon`, `ai-voice`, `weasel`, `transition`, `long-sentence`, `comma-heavy`.
-It skips comments and math. Every hit is a *candidate* — confirm by reading. Feed the hits for
-a given span to the agent working that span so it starts with the known suspects.
+Flags likely problems as `file:line: [category] detail`, across several groups:
+- **prose:** `overclaim`, `ai-voice`, `weasel`, `transition`, `semicolon`, `long-sentence`,
+  `comma-heavy`
+- **abstract:** `abstract-math`, `abstract-citation`, `abstract-crossref`
+- **floats/math:** `long-caption`, `figure-nowidth`, `crowded-figure`, `long-equation`
+- **structure/redundancy:** `misplaced-future-work`, `repeated-sentence`, `dup-caveat`,
+  `note-header`, `list-abuse`, `subsection-count`
+- **hygiene:** `unicode-dash`, `acronym-first-use`, `caption-restates-body`
+
+Run the full docstring (`python scripts/style_lint.py` with no args) for the one-line meaning of
+each. Filter with `--only cat1,cat2`. It skips comments and math. Every hit is a *candidate* —
+confirm by reading. Feed the hits for a given span to the agent working that span so it starts
+with the known suspects.
 
 ## `bib_check.py` — citation integrity + .bib risks
 ```bash

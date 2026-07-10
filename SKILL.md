@@ -83,6 +83,14 @@ Pick based on what the user asked for. When unsure, ask; default to Polish.
   `references/review-panel.md` and follow it exactly. The bottom-up traversal still
   governs how each pass reads and edits.
 
+**Review-only (senior gate).** When the user asks for a "senior review", "review like the
+senior", or "tell me what is wrong, don't edit yet", run in REVIEW-ONLY mode: produce findings
+and proposed fixes, and make **no edits** to the manuscript. Use the four senior lenses and the
+finding format in `references/review-panel.md` (narrative, clarity, figures/tables, density) —
+each finding is `SEVERITY | file:line | "exact quote" | standard | concrete fix`, and a finding
+without a grep-verifiable quote is discarded. Apply the findings only after the author explicitly
+asks; then switch to Polish and apply them surgically. Polish edits; the senior gate only reviews.
+
 **Scoped polish (one part only).** When the user names a specific part — "just the abstract",
 "only the intro", "tighten Section III", "fix this one paragraph" — polish only that unit. Run
 the same read-then-fix on it plus the unit re-read, and apply the part-specific checks (e.g.,
@@ -187,6 +195,8 @@ Editing before you understand the project is how you break a build. Spend a few 
      inside `.bib` files.
    - *Clean output wanted* (author just wants the improved text) → edit the `.tex` directly
      and rely on `git diff` as the record. This is the usual default for the Polish mode.
+   While you are asking, also get the **exact page budget** if the venue sets one (e.g., TNSE
+   18 pages including the appendix and references). You will hold it exactly in Step 3.
 
 5. **Build the outline and a pre-scan.** Run the bundled helpers to plan the traversal and
    focus attention. They are best-effort heuristics, not judges — they tell you *where to
@@ -198,6 +208,22 @@ Editing before you understand the project is how you break a build. Spend a few 
    ```
    Read `scripts/README.md` for what each flag means. Use the outline to divide work and the
    lint hits to prioritize — but you still read every sentence yourself.
+
+6. **Run the mechanical gate and record the numbers.** Before reading a single line, build the
+   paper and capture its objective state, so Step 3 can prove you did not regress it. Re-run the
+   same commands after editing.
+   ```bash
+   latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
+   pdfinfo main.pdf | grep Pages                              # must equal the stated budget, exactly
+   grep -c "Overfull" main.log                                # target 0
+   grep -iE "undefined (ref|cit)|multiply defined" main.log   # target none
+   grep -cP "[\x{2014}\x{2013}]" main.tex                     # target 0 (an ASCII -- in source is fine)
+   grep -cE '\\(sub)+section' main.tex                        # 0 only when the flat letter style (S2) applies
+   ```
+   Record the page count, overfull count, undefined/multiply-defined count, unicode-dash count,
+   and subsection count. These are the acceptance numbers you must hold or improve. If you cannot
+   build here, say so and fall back to the source-level checks. (Origin: senior-paper-review S5
+   build-hygiene gate; see `references/review-panel.md`.)
 
 ---
 
@@ -358,8 +384,24 @@ it in the final report.
    to `\small`/`\footnotesize` or `\resizebox`. Only worry about large overfulls (more than a
    few points); tiny ones are usually harmless.
 
-2. **Review the diff.** `git status` and `git diff --stat`, then read the actual diff of a
-   few units to make sure edits are surgical and no math moved.
+   Then re-run the full **mechanical gate** from Step 0 and confirm you held or improved every
+   number — this is the objective half of "did I regress anything?":
+   ```bash
+   pdfinfo main.pdf | grep Pages                              # == the stated budget, exactly
+   grep -c "Overfull" main.log                                # 0
+   grep -iE "undefined (ref|cit)|multiply defined" main.log   # none
+   grep -cP "[\x{2014}\x{2013}]" main.tex                     # 0 unicode en/em dashes in source
+   grep -cE '\\(sub)+section' main.tex                        # 0 only when flat letter style applies
+   ```
+   Hold the page budget **exactly** — one page over is a desk-reject risk, and blank space under
+   is wasted. Fix a unicode en/em dash by replacing it with an ASCII `--`/`---` in the source.
+
+2. **Review the diff — and the rendered PDF.** `git status` and `git diff --stat`, then read the
+   actual diff of a few units to make sure edits are surgical and no math moved. Then look at the
+   rendered PDF, not just the diff: check the **final page for orphan lines** (a lone line or
+   word spilling onto an otherwise-empty page wastes a whole page) and give every figure the
+   visual pass in `references/figures-tables-supplement.md` — the `.log` catches overfull boxes,
+   not a label sitting on a box border.
 
 3. **Commit.** In Polish mode, one clear commit is fine (or a few, grouped by section):
    ```bash

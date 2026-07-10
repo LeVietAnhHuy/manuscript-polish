@@ -26,6 +26,13 @@ Categories:
     long-equation       a single display-math line wide enough to overflow the column
     repeated-sentence   a substantial sentence that appears more than once (near-verbatim)
     misplaced-future-work  future-work wording outside a Conclusion/Discussion section
+    note-header         a paragraph opening with a bold/italic mini-title (scaffolding)
+    dup-caveat          a long phrase repeated across two or more sections
+    unicode-dash        a Unicode en/em dash in the source (use ASCII -- / ---)
+    subsection-count    number of subsection/subsubsection headings (metric; 0 in letter style)
+    acronym-first-use   an acronym first used without a parenthesized expansion
+    caption-restates-body  a caption sharing an 8-gram with body prose
+    list-abuse          a short-item itemize/enumerate outside the Introduction
 """
 
 import os
@@ -72,6 +79,17 @@ MATH_ENVS = {"equation", "align", "gather", "multline", "eqnarray", "displaymath
 MATH_BEGIN_RE = re.compile(r"\\begin\{([A-Za-z]+)\*?\}")
 MATH_END_RE = re.compile(r"\\end\{([A-Za-z]+)\*?\}")
 EQUATION_GLYPH_LIMIT = 52
+# senior-review-derived checks
+NOTE_HEADER_RE = re.compile(r"^\s*\\(?:textbf|emph|textit|textsc)\{[^}]{2,40}[.:]\}")
+UNICODE_DASH_RE = re.compile("[–—]")
+LIST_ENVS = {"itemize", "enumerate", "description"}
+ROMAN_RE = re.compile(r"^[IVXLCDM]+$")
+# tokens that are all-caps but do not need a first-use expansion (venues, formats, units)
+ACRONYM_ALLOW = {
+    "IEEE", "ACM", "TNSE", "JSAC", "APCC", "IOT", "PDF", "DOI", "URL", "HTML", "HTTP",
+    "HTTPS", "ISBN", "USA", "UK", "EU", "AC", "DC", "GHZ", "MHZ", "KHZ", "HZ", "DB",
+    "DBM", "MS", "US", "NS", "KM", "MW", "KW", "OK", "ID", "FAQ",
+}
 # future-work language belongs in the Conclusion, not the model/method/results
 SECTION_TITLE_RE = re.compile(r"\\section\*?\s*\{")
 SUBSECTION_TITLE_RE = re.compile(r"\\subsection\*?\s*\{")
@@ -133,8 +151,8 @@ def braced_title(text, cmd_regex):
 
 
 def strip_math(text):
-    text = re.sub(r"\$[^$]*\$", " MATH ", text)
-    text = re.sub(r"\\\([^)]*\\\)", " MATH ", text)
+    text = re.sub(r"\$[^$]*\$", " math ", text)
+    text = re.sub(r"\\\([^)]*\\\)", " math ", text)
     text = re.sub(r"\\[a-zA-Z]+\*?", " ", text)   # drop command names
     text = re.sub(r"[{}]", " ", text)
     return text
@@ -510,6 +528,209 @@ def lint_misplaced(rows, only):
     return hits
 
 
+def lint_note_headers(rows, only):
+    """Flag a paragraph that opens with a bold/italic mini-title used as scaffolding (S1)."""
+    if only and "note-header" not in only:
+        return []
+    hits = []
+    env_stack = []
+    for fpath, lineno, text in rows:
+        for m in BEGIN_RE.finditer(text):
+            env_stack.append(m.group(1))
+        skipping = any(e in SKIP_ENVS for e in env_stack)
+        for m in END_RE.finditer(text):
+            if env_stack and env_stack[-1] == m.group(1):
+                env_stack.pop()
+        if skipping:
+            continue
+        m = NOTE_HEADER_RE.match(text)
+        if m:
+            hits.append((fpath, lineno, "note-header", m.group(0).strip()))
+    return hits
+
+
+def lint_unicode_dash(rows, only):
+    """Flag a Unicode en/em dash in the source (use ASCII -- / --- instead) (S5)."""
+    if only and "unicode-dash" not in only:
+        return []
+    return [(fpath, lineno, "unicode-dash", "Unicode en/em dash — use ASCII -- / ---")
+            for fpath, lineno, text in rows if UNICODE_DASH_RE.search(text)]
+
+
+def lint_subsection_count(rows, only):
+    """Report the number of subsection/subsubsection headings (0 only in flat letter style, S2)."""
+    if only and "subsection-count" not in only:
+        return []
+    n = 0
+    first = None
+    for fpath, lineno, text in rows:
+        for _m in re.finditer(r"\\subsection\*?\b|\\subsubsection\*?\b", text):
+            n += 1
+            if first is None:
+                first = (fpath, lineno)
+    if not first:
+        return []
+    return [(first[0], first[1], "subsection-count",
+             f"{n} subsection/subsubsection headings (0 only in flat letter style)")]
+
+
+def lint_dup_caveat(rows, only):
+    """Flag a long phrase (8-gram) repeated across two or more distinct sections (S1/S5)."""
+    if only and "dup-caveat" not in only:
+        return []
+    toks = []
+    sec = None                       # None until the first \section: skips title/abstract
+    env_stack = []
+    for fpath, lineno, text in rows:
+        for m in BEGIN_RE.finditer(text):
+            env_stack.append(m.group(1))
+        skipping = any(e in SKIP_ENVS for e in env_stack)
+        for m in END_RE.finditer(text):
+            if env_stack and env_stack[-1] == m.group(1):
+                env_stack.pop()
+        if SECTION_TITLE_RE.search(text):
+            sec = (braced_title(text, SECTION_TITLE_RE) or "").strip().lower() or "(sec)"
+            continue
+        if skipping or sec is None:  # skip front matter (title, abstract) — paraphrase is normal there
+            continue
+        for w in re.findall(r"[a-z0-9]+", strip_math(text).lower()):
+            toks.append((w, sec, fpath, lineno))
+    grams = {}
+    n = 8
+    for i in range(len(toks) - n + 1):
+        window = toks[i:i + n]
+        key = " ".join(w for w, _s, _f, _l in window)
+        grams.setdefault(key, []).append((window[0][1], window[0][2], window[0][3]))
+    hits = []
+    seen_loc = set()
+    for occ in grams.values():
+        if len({s for s, _f, _l in occ}) >= 2:
+            for _s, fpath, lineno in occ:
+                if (fpath, lineno) not in seen_loc:
+                    seen_loc.add((fpath, lineno))
+                    hits.append((fpath, lineno, "dup-caveat", "long phrase repeated across sections"))
+    return hits
+
+
+ACRONYM_TOKEN_RE = re.compile(r"(?<![A-Za-z])[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*(?![A-Za-z])")
+
+
+def lint_acronyms(rows, only):
+    """Flag an acronym that is never given a parenthesized expansion anywhere (S3).
+
+    Two passes so that an acronym first seen in the title/abstract but expanded later in the body
+    is not flagged; only acronyms with no `(EXPANSION)` / `ACRONYM (…)` anywhere are reported.
+    """
+    if only and "acronym-first-use" not in only:
+        return []
+    cleaned = []
+    env_stack = []
+    started = False
+    for fpath, lineno, text in rows:
+        if "\\begin{document}" in text:
+            started = True
+        for m in BEGIN_RE.finditer(text):
+            env_stack.append(m.group(1))
+        skipping = any(e in SKIP_ENVS for e in env_stack)
+        for m in END_RE.finditer(text):
+            if env_stack and env_stack[-1] == m.group(1):
+                env_stack.pop()
+        if not started or skipping:        # skip the preamble (package/class names) and math
+            cleaned.append((fpath, lineno, ""))
+            continue
+        c = re.sub(r"\\(?:label|ref|eqref|cref|Cref|autoref|pageref|cite[a-zA-Z]*)\s*\{[^}]*\}",
+                   " ", text)
+        cleaned.append((fpath, lineno, strip_math(c)))
+
+    defined = set()
+    for _f, _l, c in cleaned:
+        for m in ACRONYM_TOKEN_RE.finditer(c):
+            tok = m.group(0)
+            if re.search(r"\(\s*" + re.escape(tok) + r"\b", c) or \
+               re.search(re.escape(tok) + r"\s*\(", c):
+                defined.add(tok)
+
+    hits = []
+    seen = set()
+    for fpath, lineno, c in cleaned:
+        for m in ACRONYM_TOKEN_RE.finditer(c):
+            tok = m.group(0)
+            if tok in seen:
+                continue
+            seen.add(tok)
+            if (tok in defined or tok in ACRONYM_ALLOW or ROMAN_RE.match(tok)
+                    or sum(ch.isalpha() for ch in tok) < 2):
+                continue
+            hits.append((fpath, lineno, "acronym-first-use",
+                         f"{tok}: never expanded (no parenthesized definition)"))
+    return hits
+
+
+def lint_caption_restates(rows, only):
+    """Flag a caption that shares an 8-gram with body prose (restating the interpretation) (S4)."""
+    if only and "caption-restates-body" not in only:
+        return []
+    joined, cline, cfile = _join_rows(rows)
+    caps, spans = [], []
+    for m in CAPTION_RE.finditer(joined):
+        b = m.end() - 1
+        e = matching_brace(joined, b)
+        if e < 0:
+            continue
+        caps.append((joined[b + 1:e], cfile[m.start()], cline[m.start()]))
+        spans.append((b, e + 1))
+    body = list(joined)
+    for s, e in spans:
+        for i in range(s, min(e, len(body))):
+            body[i] = " "
+    body_tokens = re.findall(r"[a-z0-9]+", strip_math("".join(body)).lower())
+    body_grams = {" ".join(body_tokens[i:i + 8]) for i in range(len(body_tokens) - 7)}
+    hits = []
+    for text, fpath, lineno in caps:
+        toks = re.findall(r"[a-z0-9]+", strip_math(text).lower())
+        if any(" ".join(toks[i:i + 8]) in body_grams for i in range(len(toks) - 7)):
+            hits.append((fpath, lineno, "caption-restates-body", "shares an 8-gram with body prose"))
+    return hits
+
+
+def lint_lists(rows, only):
+    """Flag a short-item itemize/enumerate outside the Introduction (definitional bullets) (S1)."""
+    if only and "list-abuse" not in only:
+        return []
+    hits = []
+    sec_intro = False
+    stack = []
+    for fpath, lineno, text in rows:
+        if SECTION_TITLE_RE.search(text):
+            sec_intro = "introduction" in (braced_title(text, SECTION_TITLE_RE) or "").lower()
+        for m in BEGIN_RE.finditer(text):
+            if m.group(1) in LIST_ENVS:
+                stack.append({"line": lineno, "file": fpath, "intro": sec_intro,
+                              "items": [], "cur": 0, "started": False})
+        if stack:
+            top = stack[-1]
+            cleaned = re.sub(r"\\(?:begin|end)\{[^}]*\}", " ", text)
+            for idx, part in enumerate(re.split(r"\\item\b", cleaned)):
+                if idx > 0:
+                    if top["started"]:
+                        top["items"].append(top["cur"])
+                    top["cur"], top["started"] = 0, True
+                if top["started"]:
+                    top["cur"] += len(re.findall(r"[A-Za-z][A-Za-z\-']+", strip_math(part)))
+        for m in END_RE.finditer(text):
+            if m.group(1) in LIST_ENVS and stack:
+                top = stack.pop()
+                if top["started"]:
+                    top["items"].append(top["cur"])
+                items = top["items"]
+                if len(items) >= 2 and not top["intro"]:
+                    avg = sum(items) / len(items)
+                    if avg < 15:
+                        hits.append((top["file"], top["line"], "list-abuse",
+                                     f"{len(items)} items, avg ~{avg:.0f} words — consider prose"))
+    return hits
+
+
 def parse_args(argv):
     positional, only = [], None
     i = 0
@@ -540,7 +761,11 @@ def main():
     rows = flatten(main_path)
     hits = (lint(rows, only) + lint_abstract(rows, only) + lint_floats(rows, only)
             + lint_figures(rows, only) + lint_equations(rows, only)
-            + lint_repeats(rows, only) + lint_misplaced(rows, only))
+            + lint_repeats(rows, only) + lint_misplaced(rows, only)
+            + lint_note_headers(rows, only) + lint_unicode_dash(rows, only)
+            + lint_subsection_count(rows, only) + lint_dup_caveat(rows, only)
+            + lint_acronyms(rows, only) + lint_caption_restates(rows, only)
+            + lint_lists(rows, only))
     hits.sort(key=lambda h: (h[0], h[1]))
 
     base = os.path.dirname(main_path)
@@ -555,6 +780,8 @@ def main():
     for cat in ["abstract-math", "abstract-citation", "abstract-crossref",
                 "long-caption", "figure-nowidth", "crowded-figure", "long-equation",
                 "repeated-sentence", "misplaced-future-work",
+                "note-header", "dup-caveat", "unicode-dash", "subsection-count",
+                "acronym-first-use", "caption-restates-body", "list-abuse",
                 "overclaim", "ai-voice", "semicolon", "long-sentence", "comma-heavy",
                 "weasel", "transition"]:
         if counts.get(cat):
